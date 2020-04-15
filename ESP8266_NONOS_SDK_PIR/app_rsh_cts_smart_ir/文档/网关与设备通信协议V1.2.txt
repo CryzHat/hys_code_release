@@ -1,0 +1,151 @@
+1.配网
+长按按键5秒 ，wifi插座进入AP模式，热点名称 SPG_MAC(wifi mac后两个字节 eg:SPG_1234），不加密open
+AP模式wifi IP为：192.168.4.1，做为UDP server,端口8266
+支持UDP直连配置，直连配置数据包{"SSID":"test12334","PASSWORD":"12356788"}
+wifi回复：{"MAC":"11:22:33:44:55:66"} ,回复后wifi切换到sta模式连接路由器
+
+2.通讯控制
+wifi插座作为UDP server  端口固定为8266
+
+1.协议基本格式:
+帧头  命令  MAC 数据  结束符（checksum）
+
+
+帧头：2bytes 固定 55 AA
+命令：1byte
+MAC:  6bytes eg:"11 22 33 44 55 66"
+数据：N byte
+结束符（checksum）：1byte  sum(帧头+命令+MAC+数据)&0xFF 
+
+命令说明：
+a.查询插座状态：         0xA0  (网关-->wifi插座)
+b.控制wifi插座开关 ：    0xA1  (网关-->wifi插座)
+c.wifi插座开关状态反馈 ：0xA2  (wifi插座-->网关)
+d.设置指示灯模式:	 0xA3 (网关-->wifi插座)
+e.设置wifi插座恢复出厂设置 ：0xFF  (网关-->wifi插座)
+f.设备发现:	             0xF0 (网关-->wifi插座)
+g.插座固件升级:              0xF1 （局域网中有web server）(网关-->wifi插座)
+
+a查询说明：
+网关 --> wifi插座
+55 AA A0 MAC 00 checksum
+eg: 55 AA A0 11 22 33 44 55 66 00 04
+55AAA01122334455660004
+wifi插座 --> 网关 
+55 AA A0 MAC XX checksum
+说明：
+XX 01 表示插座开启 00表示插座关闭
+
+b控制wifi插座开关说明：
+网关 --> wifi插座
+55 AA A1 MAC YY checksum
+
+wifi插座 --> 网关 
+55 AA A1 MAC XX checksum //确认
+说明：
+YY 01 表示控制插座开启 00表示控制插座关闭
+XX 01 表示插座开启     00表示插座关闭
+
+
+c.wifi插座开关状态反馈说明：
+wifi插座 --> 网关 
+55 AA A2 MAC XX checksum
+网关  --> wifi插座 
+55 AA A2 MAC 00 checksum //确认
+说明：
+XX 01 表示插座开启 00表示插座关闭
+
+d设置指示灯模式说明：
+网关 --> wifi插座
+55 AA A3 MAC YY checksum
+wifi插座 --> 网关 
+55 AA A3 MAC 00 checksum //确认
+说明：
+YY  01 表示控制插座开启时指示灯亮  00表示插座关闭时指示灯亮
+
+
+e恢复出厂设置说明：
+网关 --> wifi插座  
+55 AA FF MAC 00 checksum
+wifi插座  --> 网关
+55 AA FF MAC 00 checksum //确认
+
+
+f.设备发现
+wifi插座连上路由器之后，网关或app可以通过局域网广播查询设备
+wifi插座UDP端口：8266
+网关-->局域网广播
+数据包格式：
+55 AA F0 00 checksum
+wifi插座  --> 网关
+55 AA F0 MAC IP1 IP2 IP3 IP4  checksum 
+IP1~IP4 为ip地址  eg:IP1 = 192 IP2=168  IP3=0 IP4=1  (192.168.0.1) 
+
+g.设备固件升级 
+wifi插座连上路由器之后，网关或app可以通过局域网发送升级消息
+wifi插座UDP端口：8266
+网关-->插座  局域网udp
+数据包格式：
+55 AA F1 MAC IP1 IP2 IP3 IP4 PORT checksum
+wifi插座  --> 网关
+55 AA F1 MAC 00 checksum 
+IP1~IP4 为ip地址  eg:IP1 = 192 IP2=168  IP3=0 IP4=1  (192.168.0.1) 局域网中web服务器的ip
+所有数据采用十六进制表示
+PORT 1byte 为 web服务器端口  一般为80  8080
+55AAF1BCDDC202BCCBC0A802835011
+
+查询版本说明：
+网关 --> wifi插座
+55 AA FE MAC 00 checksum
+eg: 55 AA FE 11 22 33 44 55 66 00 04
+55AAFEBCDDC202BCCB00E1
+wifi插座 --> 网关 
+55 AA FE MAC V1 V2 V3 checksum 
+版本号：V1.V2.V3
+1.0.0  
+1.0.1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
